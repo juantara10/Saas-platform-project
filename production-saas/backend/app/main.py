@@ -30,7 +30,12 @@ app.add_middleware(
 )
 
 app.include_router(router)
-
+@app.get("/debug/cors", include_in_schema=False)
+def debug_cors():
+    return {
+        "cors_origins_raw": settings.cors_origins,
+        "cors_list": settings.cors_list,
+    }
 
 @app.get("/health", tags=["operations"])
 def health():
