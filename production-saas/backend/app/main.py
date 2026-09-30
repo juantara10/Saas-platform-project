@@ -16,11 +16,9 @@ app = FastAPI(
     dependencies=[Depends(enforce_rate_limit)],
 )
 
-# Configure optional OpenTelemetry instrumentation first.
 if settings.otel_exporter_otlp_endpoint:
     setup(app)
 
-# Add CORS after instrumentation so it remains the outer middleware layer.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_list,
@@ -30,17 +28,10 @@ app.add_middleware(
 )
 
 app.include_router(router)
-@app.get("/debug/cors", include_in_schema=False)
-def debug_cors():
-    return {
-        "cors_origins_raw": settings.cors_origins,
-        "cors_list": settings.cors_list,
-    }
 
 @app.get("/health", tags=["operations"])
 def health():
     return {"status": "ok", "service": settings.app_name}
-
 
 @app.get("/ready", tags=["operations"])
 def ready(db: Session = Depends(get_db)):
