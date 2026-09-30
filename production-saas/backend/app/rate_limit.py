@@ -5,10 +5,6 @@ from redis import Redis
 
 from app.core.config import settings
 
-
-RATE_LIMIT = 120
-RATE_LIMIT_WINDOW = 60
-
 try:
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
 except Exception:
@@ -17,9 +13,13 @@ except Exception:
 _local = {}
 
 
-def enforce_rate_limit(request: Request):
+def enforce_rate_limit(request: Request, limit: int = 120, window: int = 60):
+    # CORS preflight requests must pass through without rate limiting.
+    if request.method == "OPTIONS":
+        return
+
     ident = request.client.host if request.client else "unknown"
-    bucket = int(time.time() // RATE_LIMIT_WINDOW)
+    bucket = int(time.time() // window)
     key = f"rl:{ident}:{bucket}"
 
     try:
@@ -27,17 +27,18 @@ def enforce_rate_limit(request: Request):
             raise RuntimeError("Redis unavailable")
 
         n = redis.incr(key)
-        redis.expire(key, RATE_LIMIT_WINDOW * 2)
+        redis.expire(key, window + 2)
+
     except Exception:
         now = time.time()
-        count, exp = _local.get(key, (0, now + RATE_LIMIT_WINDOW))
+        count, exp = _local.get(key, (0, now + window))
 
-        if now > exp:
+        if now >= exp:
             count = 0
-            exp = now + RATE_LIMIT_WINDOW
+            exp = now + window
 
         n = count + 1
         _local[key] = (n, exp)
 
-    if n > RATE_LIMIT:
+    if n > limit:
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
