@@ -20,4 +20,8 @@ app.include_router(router)
 def health(): return {"status":"ok","service":settings.app_name}
 @app.get("/ready",tags=["operations"] )
 def ready(db:Session=Depends(get_db)): db.execute(text("SELECT 1")); return {"status":"ready"}
-setup(app)
+# OpenTelemetry instrumentation is disabled here until an OTLP collector
+# is configured. Keeping the application middleware stack deterministic
+# also ensures CORS preflight requests are handled by CORSMiddleware.
+if settings.otel_exporter_otlp_endpoint:
+    setup(app)
