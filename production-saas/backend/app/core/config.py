@@ -14,7 +14,11 @@ class Settings(BaseSettings):
  stripe_price_id:str=""
  frontend_url:str="http://localhost:3000"
  otel_exporter_otlp_endpoint:str=""
- model_config=SettingsConfigDict(env_file="../.env",extra="ignore")
+ model_config = SettingsConfigDict(
+    env_file="../.env",
+    case_sensitive=False,
+    extra="ignore",
+)
  @property
  def cors_list(self): return [x.strip() for x in self.cors_origins.split(",") if x.strip()]
 @lru_cache
