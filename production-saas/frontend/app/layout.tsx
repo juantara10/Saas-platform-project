@@ -1,0 +1,1 @@
+import "./globals.css"; export const metadata={title:"Atlas SaaS",description:"Production-grade multi-tenant SaaS platform"}; export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}

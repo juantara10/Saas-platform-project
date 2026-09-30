@@ -1,0 +1,31 @@
+name: Deploy AWS
+on:
+  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Authenticate to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push API
+        run: |
+          docker build -t ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_API_REPOSITORY }}:${{ github.sha }} backend
+          docker push ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_API_REPOSITORY }}:${{ github.sha }}
+      - name: Build and push web
+        run: |
+          docker build -t ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_WEB_REPOSITORY }}:${{ github.sha }} frontend
+          docker push ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_WEB_REPOSITORY }}:${{ github.sha }}
+      - name: Trigger ECS deployments
+        run: |
+          aws ecs update-service --cluster "${{ vars.ECS_CLUSTER }}" --service "${{ vars.ECS_API_SERVICE }}" --force-new-deployment
+          aws ecs update-service --cluster "${{ vars.ECS_CLUSTER }}" --service "${{ vars.ECS_WEB_SERVICE }}" --force-new-deployment

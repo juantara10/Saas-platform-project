@@ -1,0 +1,1 @@
+import {test,expect} from "@playwright/test"; test("landing page presents production SaaS",async({page})=>{await page.goto("/");await expect(page.getByRole("heading",{name:/Multi-tenant SaaS/})).toBeVisible();await expect(page.getByText(/Stripe/).first()).toBeVisible()});
